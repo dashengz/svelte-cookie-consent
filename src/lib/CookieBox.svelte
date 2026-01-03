@@ -21,6 +21,7 @@
 		customize,
 		choices = $bindable(),
 		editable = true,
+		showEditButton = true,
 		fingerprinting = false,
 		bgColor = '#000000',
 		fgColor = '#ffffff',
@@ -37,6 +38,7 @@
 	{customize}
 	{choices}
 	{editable}
+	{showEditButton}
 	{fingerprinting}
 	{bgColor}
 	{fgColor}

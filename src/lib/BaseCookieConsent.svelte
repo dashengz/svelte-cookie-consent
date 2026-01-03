@@ -1,5 +1,5 @@
 <script lang="ts">
-	import CookieCore from './core.js';
+	import CookieCore, { registerEditCallback } from './core.js';
 	import { onMount } from 'svelte';
 	import type { BaseProps } from './types.js';
 	import EditCookies from './EditCookies.svelte';
@@ -12,6 +12,7 @@
 		customize,
 		choices = $bindable(),
 		editable,
+		showEditButton = true,
 		fingerprinting = true,
 		bgColor,
 		fgColor,
@@ -85,11 +86,15 @@
 	};
 
 	const editCookies = () => {
+		if (!editable) return;
 		showConsent = true;
 		showCustomizeBtn();
 	};
 
 	onMount(() => {
+		// Auto-register for programmatic control
+		registerEditCallback(editCookies);
+
 		let selectedCookies = core.getSaved();
 		// If the cookie isn't present show the box
 		if (!selectedCookies) return void (showConsent = true);
@@ -140,7 +145,7 @@
 			/>
 		{/if}
 	</div>
-{:else if editable}
+{:else if editable && showEditButton}
 	<EditCookies onclick={editCookies} {position} />
 {/if}
 

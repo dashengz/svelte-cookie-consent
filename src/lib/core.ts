@@ -2,6 +2,52 @@ import cookies from 'js-cookie';
 import { v4 as uuid } from 'uuid';
 import type { CookieConfig, Choices, FingerprintingConfig } from './types.js';
 
+// ============================================================================
+// Programmatic Control
+// ============================================================================
+
+let editCallback: (() => void) | undefined;
+
+/**
+ * Register the editCookies callback for programmatic control.
+ * Called automatically by BaseCookieConsent.
+ * @internal
+ */
+export function registerEditCallback(callback: () => void) {
+	editCallback = callback;
+}
+
+/**
+ * Programmatically open the cookie settings modal.
+ * Can be called from any component (e.g., footer links, settings pages).
+ * Requires `editable={true}` on the cookie consent component.
+ *
+ * @returns true if the modal was opened, false if no instance is registered
+ *
+ * @example
+ * ```svelte
+ * <script>
+ *   import { openCookieSettings } from 'svelte-cookie-consent';
+ * </script>
+ *
+ * <button onclick={() => openCookieSettings()}>
+ *   Cookie Settings
+ * </button>
+ * ```
+ */
+export function openCookieSettings(): boolean {
+	if (editCallback) {
+		editCallback();
+		return true;
+	}
+	// console.warn('[svelte-cookie-consent] No cookie consent instance registered');
+	return false;
+}
+
+// ============================================================================
+// CookieCore
+// ============================================================================
+
 export default class CookieCore {
 	constructor(
 		private cookie: CookieConfig,

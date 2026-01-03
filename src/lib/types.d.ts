@@ -192,6 +192,13 @@ export type BaseProps = {
 	editable?: boolean;
 
 	/**
+	 * If false, the default "Edit Cookies" button won't be shown.
+	 * Use the component's openCustomize() method for custom triggers.
+	 * @default true
+	 */
+	showEditButton?: boolean;
+
+	/**
 	 * Enables fingerprinting.
 	 * Can be a boolean or detailed configuration.
 	 * @default false

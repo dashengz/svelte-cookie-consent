@@ -112,6 +112,41 @@ Check out the [documentation](https://svelte-cookie-consent.js.org) for a list o
 ></cookie-banner>
 ```
 
+## Programmatic Control
+
+You can programmatically open the cookie settings modal from anywhere in your application using the `openCookieSettings()` function. This is useful for adding cookie settings links in footers, settings pages, or custom UI elements.
+
+### Basic Example
+
+```svelte
+<script lang="ts">
+   import { openCookieSettings } from 'svelte-cookie-consent';
+</script>
+
+<button onclick={() => openCookieSettings()}> Cookie Settings </button>
+```
+
+### Hiding the Default Edit Button
+
+If you want to use only custom triggers, you can hide the default floating edit button:
+
+```svelte
+<CookieBox
+   editable={true}
+   showEditButton={false}
+   {/* ...other props */}
+/>
+
+<!-- Then trigger from your custom UI -->
+<footer>
+   <button onclick={() => openCookieSettings()}>
+      Manage Cookie Preferences
+   </button>
+</footer>
+```
+
+**Note:** The `editable` prop must be set to `true` (which is the default) for programmatic control to work.
+
 ## Fingerprinting
 
 Accepting analytics or tracking cookies will create a unique UUID to allow you to differentiate events from different users when using server-side cookies in a system such as CAPI.
