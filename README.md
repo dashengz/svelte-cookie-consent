@@ -44,6 +44,9 @@ Check out the [documentation](https://svelte-cookie-consent.js.org) for a list o
 <script lang="ts">
    import { CookieBox } from '$lib/index.js';
 
+   // Optional: define cookie name as a constant for reuse
+   const COOKIE_NAME = 'gdpr-cookie';
+
    const choices = $state({
       necessary: {
          label: 'Necessary cookies',
@@ -71,7 +74,7 @@ Check out the [documentation](https://svelte-cookie-consent.js.org) for a list o
 
 <CookieBox
    cookie={{
-      name: 'gdpr-cookie',
+      name: COOKIE_NAME,
       path: '/',
       secure: true,
       sameSite: 'strict',
@@ -147,24 +150,62 @@ If you want to use only custom triggers, you can hide the default floating edit 
 
 **Note:** The `editable` prop must be set to `true` (which is the default) for programmatic control to work.
 
+## Understanding the Cookie
+
+The consent cookie stores two types of data:
+
+```json
+{
+  // User Choices (Booleans)
+  "necessary": true,
+  "analytics": true,
+  "marketing": false,
+  ...
+  // Fingerprint
+  "fingerprint": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
+```
+
 ## Fingerprinting
 
-Accepting analytics or tracking cookies will create a unique UUID to allow you to differentiate events from different users when using server-side cookies in a system such as CAPI.
+Generate a unique UUID for server-side analytics (such as CAPI) when users accept specific cookie types. By default, fingerprinting activates when users accept `tracking` or `analytics` cookies.
 
-To enable fingerprinting you must have a configuration like this or use the default one (_which is already GDPR compliant_):
+### Basic Usage
 
 ```svelte
 <CookieBox fingerprinting={true} />
-<!-- OR -->
+```
+
+### Custom Configuration
+
+```svelte
 <CookieBox
    fingerprinting={{
-      uuid: 'a-unique-user-identifier',
+      enabledBy: ['analytics'], // Only activate for analytics
+      uuid: 'custom-identifier', // Optional: provide your own UUID
       cookie: {
-         name: 'fingerprint',
+         // Optional: store in separate cookie
+         name: 'fingerprint', // Consider storing this as a constant for reuse
          path: '/',
          secure: true,
          sameSite: 'strict',
       },
    }}
 />
+```
+
+### Retrieving the Fingerprint
+
+Use the same `COOKIE_NAME` constant with `getFingerprint()` in both client and server contexts.
+
+```typescript
+import { getFingerprint } from 'svelte-cookie-consent';
+
+const COOKIE_NAME = 'gdpr-cookie';
+
+// Client-side
+const userId = getFingerprint(COOKIE_NAME);
+
+// Server-side
+const userId = getFingerprint(COOKIE_NAME, { cookies });
 ```

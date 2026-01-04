@@ -60,10 +60,19 @@ export default class CookieCore {
 			Object.entries(this.choices).map(([key, choice]) => [key, Boolean(choice.value)]),
 		);
 
-		if (this.fingerprinting && (data.tracking || data.analytics)) {
+		const enabledByChoices =
+			this.fingerprinting !== true &&
+			typeof this.fingerprinting === 'object' &&
+			this.fingerprinting.enabledBy
+				? this.fingerprinting.enabledBy
+				: ['tracking', 'analytics'];
+
+		const shouldEnableFingerprint = enabledByChoices.some((key) => data[key] === true);
+
+		if (this.fingerprinting && shouldEnableFingerprint) {
 			const fp =
 				JSON.parse(cookies.get(this.cookie.name) ?? '{}').fingerprint ??
-				(this.fingerprinting === true ? uuid() : this.fingerprinting.uuid);
+				(this.fingerprinting === true ? uuid() : (this.fingerprinting.uuid ?? uuid()));
 
 			if (this.fingerprinting !== true && 'cookie' in this.fingerprinting) {
 				const { name, ...config } = this.fingerprinting.cookie!;
@@ -104,5 +113,48 @@ export default class CookieCore {
 				void (value ? choice?.onAccepted?.() : choice?.onRejected?.());
 			}
 		});
+	}
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+/**
+ * Get the fingerprint UUID from cookie consent data.
+ * Works in both client-side and server-side contexts.
+ *
+ * @param cookieName - The name of the consent cookie
+ * @param options - Optional configuration for SSR contexts
+ * @param options.cookies - Server-side cookies object with get() method (for SSR)
+ * @returns The fingerprint UUID or undefined
+ *
+ * @example
+ * ```typescript
+ * // Define cookie name as a constant
+ * const COOKIE_NAME = 'gdpr-cookie';
+ *
+ * // Client-side (browser)
+ * const userId = getFingerprint(COOKIE_NAME);
+ *
+ * // Server-side (SvelteKit)
+ * const userId = getFingerprint(COOKIE_NAME, { cookies });
+ * ```
+ */
+export function getFingerprint(
+	cookieName: string,
+	options?: { cookies?: { get: (name: string) => string | undefined } },
+): string | undefined {
+	const cookieGetter =
+		options?.cookies?.get.bind(options.cookies) ?? ((name: string) => cookies.get(name));
+	const cookieValue = cookieGetter(cookieName);
+
+	if (!cookieValue) return undefined;
+
+	try {
+		const parsed = JSON.parse(cookieValue);
+		return parsed.fingerprint;
+	} catch {
+		return undefined;
 	}
 }

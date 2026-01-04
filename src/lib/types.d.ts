@@ -100,6 +100,20 @@ export type FingerprintingConfig = {
 	 * If not provided, it will be stored inside the other cookie.
 	 */
 	cookie?: CookieConfig;
+
+	/**
+	 * Array of choice keys that enable fingerprinting when accepted.
+	 * If not specified, defaults to ['tracking', 'analytics'] for backward compatibility.
+	 *
+	 * @example
+	 * // Only enable fingerprinting for analytics
+	 * fingerprinting={{ enabledBy: ['analytics'] }}
+	 *
+	 * @example
+	 * // Enable fingerprinting for analytics and marketing
+	 * fingerprinting={{ enabledBy: ['analytics', 'marketing'] }}
+	 */
+	enabledBy?: string[];
 };
 
 export type CookiePosition = 'left' | 'right';
