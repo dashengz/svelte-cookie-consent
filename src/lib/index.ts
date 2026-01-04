@@ -9,7 +9,7 @@ import type {
 	FingerprintingConfig,
 } from './types.js';
 
-export { openCookieSettings } from './core.js';
+export { openCookieSettings, cookieChoices, getFingerprint } from './core.js';
 
 export {
 	CookieBox,

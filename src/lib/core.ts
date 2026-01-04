@@ -1,5 +1,6 @@
 import cookies from 'js-cookie';
 import { v4 as uuid } from 'uuid';
+import { writable } from 'svelte/store';
 import type { CookieConfig, Choices, FingerprintingConfig } from './types.js';
 
 // ============================================================================
@@ -11,7 +12,6 @@ let editCallback: (() => void) | undefined;
 /**
  * Register the editCookies callback for programmatic control.
  * Called automatically by BaseCookieConsent.
- * @internal
  */
 export function registerEditCallback(callback: () => void) {
 	editCallback = callback;
@@ -40,20 +40,74 @@ export function openCookieSettings(): boolean {
 		editCallback();
 		return true;
 	}
-	// console.warn('[svelte-cookie-consent] No cookie consent instance registered');
 	return false;
 }
+
+// ============================================================================
+// Reactive Cookie Choices Store
+// ============================================================================
+
+/**
+ * Reactive store for cookie consent choices.
+ * Automatically updates when user accepts/rejects cookie choices.
+ *
+ * @example
+ * ```svelte
+ * <script>
+ *   import { cookieChoices } from 'svelte-cookie-consent';
+ * </script>
+ *
+ * {#if $cookieChoices.analytics}
+ *   <p>Analytics enabled</p>
+ * {/if}
+ * ```
+ */
+export const cookieChoices = writable<Record<string, boolean>>({});
 
 // ============================================================================
 // CookieCore
 // ============================================================================
 
 export default class CookieCore {
+	private choices: Choices;
+
 	constructor(
 		private cookie: CookieConfig,
-		private choices: Choices,
+		choices: Choices,
 		private fingerprinting: boolean | FingerprintingConfig,
-	) {}
+	) {
+		this.choices = this.enhanceChoiceCallbacks(choices);
+	}
+
+	/**
+	 * Enhance callbacks to update the store after user callbacks execute.
+	 */
+	private enhanceChoiceCallbacks(choices: Choices): Choices {
+		Object.entries(choices).forEach(([_key, choice]) => {
+			const originalOnAccepted = choice.onAccepted;
+			const originalOnRejected = choice.onRejected;
+
+			choice.onAccepted = originalOnAccepted
+				? async () => {
+						await originalOnAccepted();
+						this.updateStore();
+					}
+				: () => {
+						this.updateStore();
+					};
+
+			choice.onRejected = originalOnRejected
+				? async () => {
+						await originalOnRejected();
+						this.updateStore();
+					}
+				: () => {
+						this.updateStore();
+					};
+		});
+
+		return choices;
+	}
 
 	public save() {
 		const data: { [k: string]: boolean | string } = Object.fromEntries(
@@ -84,6 +138,12 @@ export default class CookieCore {
 
 		const { name, ...config } = this.cookie;
 		cookies.set(name, JSON.stringify(data), config);
+
+		Object.entries(this.choices).forEach(([key, choice]) => {
+			if (key !== 'fingerprint') {
+				void (choice.value ? choice?.onAccepted?.() : choice?.onRejected?.());
+			}
+		});
 	}
 
 	public acceptAll() {
@@ -113,6 +173,14 @@ export default class CookieCore {
 				void (value ? choice?.onAccepted?.() : choice?.onRejected?.());
 			}
 		});
+	}
+
+	private updateStore() {
+		cookieChoices.set(
+			Object.fromEntries(
+				Object.entries(this.choices).map(([key, choice]) => [key, Boolean(choice.value)]),
+			),
+		);
 	}
 }
 
